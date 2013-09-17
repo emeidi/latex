@@ -1,0 +1,111 @@
+#!/bin/sh
+ 
+date
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: Working with engine '$0'"
+ 
+if [ $# -lt 1 ]
+then
+        echo "Please provide .tex-File"
+        exit 1
+fi
+ 
+TEXROOT="/usr/texbin"
+TEXBIN="$TEXROOT/latex"
+INDEXBIN="$TEXROOT/makeindex"
+BIBTEXBIN="$TEXROOT/bibtex"
+PDFTEXBIN="$TEXROOT/pdflatex"
+ 
+WORKDIR="$PWD/"
+OUTDIR="$PWD/OUT/"
+BASENAME=`basename "$1" .tex`
+ 
+BIB="$WORKDIR$BASENAME.bib"
+#BIBAUX="$WORKDIR$BASENAME.aux" #bibtex wants .aux, not .bib
+BIBAUX="$OUTDIR$BASENAME.aux"
+TEX="$WORKDIR$BASENAME.tex"
+#TEX="$OUTDIR$BASENAME.tex"
+ 
+#ARGS="-output-directory=\"$OUTDIR\""
+ARGS=-output-directory="$OUTDIR"
+#ARGS=""
+ 
+# Tipa Workaround
+echo "--------------------------------------------------------------------------------"
+echo "INFO: Path was '$PATH'"
+export PATH="$PATH:/usr/local/teTeX/bin/powerpc-apple-darwin6.8"
+echo "INFO: Path is '$PATH'"
+ 
+#echo "--------------------------------------------------------------------------------"
+#export TEXMF="/usr/local/teTeX/share/texmf.tetex"
+#echo "INFO: TEXMF is $TEXMF"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: Working in directory '$WORKDIR'"
+ 
+if [ ! -f "$BIB" ]
+then
+    echo "--------------------------------------------------------------------------------"
+    echo "ERROR: .bib-File '$BIB' not found"
+    exit 1
+fi
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: calling cp -f \"$BIB\" \"$OUTDIR\""
+ 
+#cp "$TEX" "$OUTDIR"
+cp -f "$BIB" "$OUTDIR"
+ 
+if [ ! -f "$TEX"  ]
+then
+    echo "--------------------------------------------------------------------------------"
+    echo "ERROR: .tex-file '$TEX' not found"
+    exit 1
+fi
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: .tex-file '$TEX' found"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: calling $TEXBIN $ARGS \"$TEX\""
+echo "--------------------------------------------------------------------------------"
+ 
+$TEXBIN $ARGS "$TEX"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: cd \"$OUTDIR\", then calling $BIBTEXBIN \"$BIBAUX\""
+echo "--------------------------------------------------------------------------------"
+ 
+cd "$OUTDIR"
+$BIBTEXBIN "$BIBAUX"
+cd "$WORKDIR"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: calling $INDEXBIN $WORKDIR$BASENAME.glo -s nomencl.ist -o $WORKDIR$BASENAME.gls"
+echo "--------------------------------------------------------------------------------"
+ 
+#$INDEXBIN "$WORKDIR$BASENAME.glo" -s "/usr/local/teTeX/share/texmf.tetex/makeindex/nomencl.ist" -o "$WORKDIR$BASENAME.gls"
+#$INDEXBIN "$OUTDIR$BASENAME.glo" -s "/usr/local/texlive/2010/texmf-dist/makeindex/nomencl/nomencl.ist" -o "$OUTDIR$BASENAME.gls"
+$INDEXBIN "$OUTDIR$BASENAME.nlo" -s "nomencl.ist" -o "$OUTDIR$BASENAME.nls"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: calling $TEXBIN $ARGS '$TEX'"
+echo "--------------------------------------------------------------------------------"
+ 
+$TEXBIN $ARGS "$TEX"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: calling $PDFTEXBIN $ARGS '$TEX'"
+echo "--------------------------------------------------------------------------------"
+ 
+$PDFTEXBIN $ARGS "$TEX"
+ 
+echo "--------------------------------------------------------------------------------"
+echo "INFO: done."
+echo "--------------------------------------------------------------------------------"
+date
+ 
+mv -f "$OUTDIR$BASENAME.pdf" "$WORKDIR"
+ 
+exit 0
